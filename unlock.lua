@@ -4,7 +4,8 @@ Unlocking algorithm:
 		if owner of lock
 			delete key
 			return true
-		return false
+		else return false
+	else return false
 --]]
 local call_owner = ARGV[1]
 if redis.call('EXISTS', KEYS[1]) == 1 then

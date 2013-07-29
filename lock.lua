@@ -1,13 +1,14 @@
 --[[
 Locking algorithm:
 	if the key exists
-		if owner of lock
+		if caller is owner of lock
 			update ttl
 			return true
+		else return false
 	if the key does not exist
-		set ttl
 		set owner
-
+		set ttl
+		return true
 --]]
 
 local call_owner = ARGV[1]
