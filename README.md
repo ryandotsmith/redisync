@@ -7,10 +7,12 @@ A Go package which implements synchronization functions on top of Redis. The hea
 $ go install github.com/ryandotsmith/redisync
 ```
 
-## Documentation:
+## Documentation
 [GoDoc](http://godoc.org/github.com/ryandotsmith/redisync)
 
 ## Hacking on Redisync
+
+[![Build Status](https://drone.io/github.com/ryandotsmith/redisync/status.png)](https://drone.io/github.com/ryandotsmith/redisync/latest)
 
 ```bash
 $ go version
