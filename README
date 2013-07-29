@@ -1,0 +1,5 @@
+Redisync
+
+A go package which implements synchronization functions on top of Redis. The heavy lifting is done with Lua scripts to make the elmination of race conditions easier.
+
+Documentation: http://godoc.org/github.com/ryandotsmith/redisync
