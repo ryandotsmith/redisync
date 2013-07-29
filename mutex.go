@@ -1,4 +1,5 @@
 // Synchronization built on top of Redis.
+// Depends on github.com/garyburd/redigo/redis
 package redisync
 
 import (
@@ -12,26 +13,26 @@ import (
 
 type Mutex struct {
 	// The key used in Redis.
-	Name    string
+	Name string
 	// The amount of time before Redis will expire the lock.
-	Ttl     time.Time
+	Ttl time.Time
 	// The time to sleep before retrying a lock attempt.
 	Backoff time.Duration
 	// A uuid representing the local instantiation of the mutex.
-	id      string
+	id string
 	// Local conrrency controll.
-	l       sync.Mutex
+	l sync.Mutex
 	// Redis connections are always created in package.
-	c       redis.Conn
+	c redis.Conn
 	// See lock.lua
-	lock    *redis.Script
+	lock *redis.Script
 	// See unlock.lua
-	unlock  *redis.Script
+	unlock *redis.Script
 }
 
 // Each lock will have a name which corrisponds to a key in the Redis server.
-// The mutex will also be initialized with a uuid. The mutex uuid will
-// can used to extend the TTL for the lock.
+// The mutex will also be initialized with a uuid. The mutex uuid
+// can be used to extend the TTL for the lock.
 func New(name string) (*Mutex, error) {
 	m := new(Mutex)
 	m.Name = name
@@ -49,28 +50,29 @@ func New(name string) (*Mutex, error) {
 	return m, nil
 }
 
-// This function can be called more than once. If called a second time
-// but before TTL expiration, the TTL will be extended.
-// This function sleeps forever until the lock can be acquired.
-func (m *Mutex) Lock() error {
-	m.l.Lock()
-	defer m.l.Unlock()
-
-	acquired := false
+// With similar behaviour to Go's sync pkg,
+// this function will sleep until TryLock() returns true.
+func (m *Mutex) Lock() {
 	for {
-		if acquired {
-			break
-		}
-		reply, err := m.lock.Do(m.c, m.Name, m.id)
-		if err != nil {
-			return err
-		}
-		if reply.(int64) == 1 {
-			acquired = true
+		if m.TryLock() {
+			return
 		}
 		time.Sleep(m.Backoff)
 	}
-	return nil
+}
+
+// Makes a single attempt to acquire the lock.
+// Locking a mutex which has already been locked
+// using the mutex uuid will result in the TTL of the mutex being extended.
+func (m *Mutex) TryLock() bool {
+	m.l.Lock()
+	defer m.l.Unlock()
+
+	reply, err := m.lock.Do(m.c, m.Name, m.id)
+	if err != nil {
+		return false
+	}
+	return reply.(int64) == 1
 }
 
 // If the local mutex uuid matches the uuid in Redis,

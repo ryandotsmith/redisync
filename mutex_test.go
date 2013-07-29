@@ -9,9 +9,6 @@ func TestLock(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = m.Lock()
-	if err != nil {
-		t.Error(err)
-	}
+	m.Lock()
 	m.Unlock()
 }
