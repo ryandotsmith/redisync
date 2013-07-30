@@ -5,8 +5,8 @@ package redisync
 import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"net/url"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"sync"
 	"time"
@@ -16,7 +16,7 @@ type Mutex struct {
 	// The key used in Redis.
 	Name string
 	// The amount of time before Redis will expire the lock.
-	Ttl time.Time
+	Ttl time.Duration
 	// The time to sleep before retrying a lock attempt.
 	Backoff time.Duration
 	// A uuid representing the local instantiation of the mutex.
@@ -37,9 +37,10 @@ type Mutex struct {
 // The redis url should take the form: redis://user:pass@host:port.
 // If the rurl == "" then a connection will be made on localhsot at port
 // 6379 with no authentication.
-func NewMutex(name, rurl string) (*Mutex, error) {
+func NewMutex(name string, ttl time.Duration, rurl string) (*Mutex, error) {
 	m := new(Mutex)
 	m.Name = name
+	m.Ttl = ttl
 	m.Backoff = time.Second
 	m.id = uuid()
 	c, err := establishRedisConn(rurl)
@@ -97,7 +98,7 @@ func (m *Mutex) TryLock() bool {
 	m.l.Lock()
 	defer m.l.Unlock()
 
-	reply, err := m.lock.Do(m.c, m.Name, m.id)
+	reply, err := m.lock.Do(m.c, m.Name, m.id, m.Ttl.Seconds())
 	if err != nil {
 		return false
 	}
