@@ -10,19 +10,7 @@ $ go install github.com/ryandotsmith/redisync
 ```
 
 ## Usage
-```go
-package main
-
-import "github.com/ryandotsmith/redisync"
-
-func main() {
-	ttl := time.Minute
-	m := redisync.NewMutex("my-lock", ttl, "redis://u:p@localhost:6379")
-	m.Lock()
-	defer m.Unlock()
-	print("at=critical-section\n")
-}
-```
+See: *./example_test.go*
 
 ## Documentation
 [GoDoc](http://godoc.org/github.com/ryandotsmith/redisync)
