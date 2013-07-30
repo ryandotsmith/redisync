@@ -5,7 +5,7 @@ import (
 )
 
 func TestLock(t *testing.T) {
-	m, err := New("redisync.test.1", "")
+	m, err := NewMutex("redisync.test.1", "")
 	if err != nil {
 		t.Error(err)
 	}

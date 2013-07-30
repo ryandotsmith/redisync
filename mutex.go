@@ -37,7 +37,7 @@ type Mutex struct {
 // The redis url should take the form: redis://user:pass@host:port.
 // If the rurl == "" then a connection will be made on localhsot at port
 // 6379 with no authentication.
-func New(name, rurl string) (*Mutex, error) {
+func NewMutex(name, rurl string) (*Mutex, error) {
 	m := new(Mutex)
 	m.Name = name
 	m.Backoff = time.Second
