@@ -2,6 +2,8 @@
 
 A Go package which implements synchronization functions on top of Redis. The heavy lifting is done with Lua scripts to make the elimination of race conditions easier.
 
+Note: When using a TTL, the user should take care to finsih execution before the TTL.
+
 ## Install
 ```bash
 $ go install github.com/ryandotsmith/redisync
@@ -14,7 +16,8 @@ package main
 import "github.com/ryandotsmith/redisync"
 
 func main() {
-	m := redisync.NewMutex("my-lock", "redis://u:p@localhost:6379")
+	ttl := time.Minute
+	m := redisync.NewMutex("my-lock", ttl, "redis://u:p@localhost:6379")
 	m.Lock()
 	defer m.Unlock()
 	print("at=critical-section\n")
