@@ -5,6 +5,7 @@ package redisync
 import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	"net/url"
 	"io/ioutil"
 	"os"
 	"sync"
@@ -33,14 +34,15 @@ type Mutex struct {
 // Each lock will have a name which corrisponds to a key in the Redis server.
 // The mutex will also be initialized with a uuid. The mutex uuid
 // can be used to extend the TTL for the lock.
-func New(name string) (*Mutex, error) {
+// The redis url should take the form: redis://user:pass@host:port.
+// If the rurl == "" then a connection will be made on localhsot at port
+// 6379 with no authentication.
+func New(name, rurl string) (*Mutex, error) {
 	m := new(Mutex)
 	m.Name = name
 	m.Backoff = time.Second
 	m.id = uuid()
-	// Initialize a Redis connection.
-	// TODO(ryandotsmith): Allow users to pass in connection.
-	c, err := redis.Dial("tcp", ":6379")
+	c, err := establishRedisConn(rurl)
 	if err != nil {
 		return nil, err
 	}
@@ -48,6 +50,33 @@ func New(name string) (*Mutex, error) {
 	m.lock = redis.NewScript(1, readSource("./lock.lua"))
 	m.unlock = redis.NewScript(1, readSource("./unlock.lua"))
 	return m, nil
+}
+
+func establishRedisConn(u string) (redis.Conn, error) {
+	if len(u) == 0 {
+		c, err := redis.Dial("tcp", ":6379")
+		if err != nil {
+			return nil, err
+		}
+		return c, nil
+	}
+
+	redisUrl, err := url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+	c, err := redis.Dial("tcp", redisUrl.Host)
+	if err != nil {
+		return nil, err
+	}
+	pass, usingPass := redisUrl.User.Password()
+	if usingPass {
+		_, err = c.Do("AUTH", pass)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return c, nil
 }
 
 // With similar behaviour to Go's sync pkg,
