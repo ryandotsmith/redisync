@@ -11,6 +11,13 @@ import (
 	"time"
 )
 
+var luaLock, luaUnlock string
+
+func init() {
+	luaLock = readSource("lock.lua")
+	luaUnlock = readSource("unlock.lua")
+}
+
 type Mutex struct {
 	// The key used in Redis.
 	Name string
@@ -37,8 +44,8 @@ func NewMutex(name string, ttl time.Duration) *Mutex {
 	m.Ttl = ttl
 	m.Backoff = time.Second
 	m.id = uuid()
-	m.lock = redis.NewScript(1, readSource("lock.lua"))
-	m.unlock = redis.NewScript(1, readSource("unlock.lua"))
+	m.lock = redis.NewScript(1, luaLock)
+	m.unlock = redis.NewScript(1, luaUnlock)
 	return m
 }
 
