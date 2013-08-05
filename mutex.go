@@ -37,8 +37,8 @@ func NewMutex(name string, ttl time.Duration) *Mutex {
 	m.Ttl = ttl
 	m.Backoff = time.Second
 	m.id = uuid()
-	m.lock = redis.NewScript(1, readSource("./lock.lua"))
-	m.unlock = redis.NewScript(1, readSource("./unlock.lua"))
+	m.lock = redis.NewScript(1, readSource("lock.lua"))
+	m.unlock = redis.NewScript(1, readSource("unlock.lua"))
 	return m
 }
 
@@ -83,7 +83,9 @@ func (m *Mutex) Unlock(c redis.Conn) (bool, error) {
 }
 
 func readSource(name string) string {
-	src, err := ioutil.ReadFile(name)
+	path := os.Getenv("GOPATH")
+	prefix := path + "/src/github.com/ryandotsmith/redisync/"
+	src, err := ioutil.ReadFile(prefix + name)
 	if err != nil {
 		panic("redisync: Unable to read unlock.lua")
 	}
