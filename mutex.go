@@ -5,18 +5,61 @@ package redisync
 import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
-	"io/ioutil"
 	"os"
 	"sync"
 	"time"
 )
 
-var luaLock, luaUnlock string
-
-func init() {
-	luaLock = readSource("lock.lua")
-	luaUnlock = readSource("unlock.lua")
-}
+/*
+Locking algorithm:
+	if the key exists
+		if caller is owner of lock
+			update ttl
+			return true
+		else return false
+	if the key does not exist
+		set owner
+		set ttl
+		return true
+*/
+var luaLock = `
+local call_owner = ARGV[1]
+local ttl = ARGV[2]
+if redis.call('EXISTS', KEYS[1]) == 1 then
+	local lock_owner = redis.call('GET', KEYS[1])
+	if lock_owner == call_owner then
+		redis.call('EXPIRE', KEYS[1], ttl)
+		return 1
+	end
+	return 0
+else
+	redis.call('SET', KEYS[1], call_owner)
+	redis.call('EXPIRE', KEYS[1], ttl)
+	return 1
+end
+`
+/*
+Unlocking algorithm:
+	if the key exists
+		if owner of lock
+			delete key
+			return true
+		else return false
+	else return false
+*/
+var luaUnlock = `
+local call_owner = ARGV[1]
+if redis.call('EXISTS', KEYS[1]) == 1 then
+	local lock_owner = redis.call('GET', KEYS[1])
+	if lock_owner == call_owner then
+		redis.call('DEL', KEYS[1])
+		return 1
+	end
+	return 0
+else
+	return 0
+end
+`
 
 type Mutex struct {
 	// The key used in Redis.
@@ -87,16 +130,6 @@ func (m *Mutex) Unlock(c redis.Conn) (bool, error) {
 		return false, err
 	}
 	return reply.(int64) == 1, nil
-}
-
-func readSource(name string) string {
-	path := os.Getenv("GOPATH")
-	prefix := path + "/src/github.com/ryandotsmith/redisync/"
-	src, err := ioutil.ReadFile(prefix + name)
-	if err != nil {
-		panic("redisync: Unable to read unlock.lua")
-	}
-	return string(src)
 }
 
 func uuid() string {
