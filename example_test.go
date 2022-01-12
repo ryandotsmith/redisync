@@ -1,11 +1,12 @@
 package redisync
 
 import (
+	"fmt"
 	"net/url"
 	"os"
-	"github.com/garyburd/redigo/redis"
-	"fmt"
 	"time"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 var rc redis.Conn

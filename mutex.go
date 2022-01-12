@@ -4,10 +4,11 @@ package redisync
 
 import (
 	"fmt"
-	"github.com/garyburd/redigo/redis"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 /*
@@ -38,6 +39,7 @@ else
 	return 1
 end
 `
+
 /*
 Unlocking algorithm:
 	if the key exists
